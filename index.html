@@ -13,7 +13,8 @@
 
     <script>
         // Inicializa o jsPsych
-        const jsPsych = initJsPsych();
+        const participantID = "P-" + Math.random().toString(36).substr(2, 8); // Ex: "P-x5g7f9k"
+jsPsych.data.addProperties({ participant_id: participantID });
 
         // ===== TELAS DE INTRODUÇÃO =====
         const introScreens = [
@@ -188,18 +189,38 @@
 
         // ===== SALVAR DADOS =====
         const saveData = {
-            type: jsPsychHtmlKeyboardResponse,
-            stimulus: "<p>Obrigado! Seus dados foram salvos.</p>",
-            on_start: function() {
-                const data = jsPsych.data.get().csv();
-                const blob = new Blob([data], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'dados_participante.csv';
-                link.click();
-            }
-        };
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: "<p>Obrigado por participar! Seus dados estão sendo salvos...</p>",
+  on_start: function() {
+    const data = {
+      metadata: {
+        id: participantID,
+        date: new Date().toISOString(),
+        duration: jsPsych.getTotalTime() / 1000 // Em segundos
+      },
+      responses: jsPsych.data.get().json()
+    };
+
+    // Envia para o Apps Script E faz download local
+    fetch('https://script.google.com/macros/s/SEU_SCRIPT_ID/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => console.log("Sucesso:", data))
+    .catch(error => console.error("Erro:", error));
+
+    // Backup local (opcional)
+    const csv = jsPsych.data.get().csv();
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `dados_${participantID}.csv`;
+    link.click();
+  }
+};
 
         // ===== TELA FINAL =====
         const endScreen = {
