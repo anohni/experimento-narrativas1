@@ -13,9 +13,12 @@
 
     <script>
         // Inicializa o jsPsych
-        const participantID = "P-" + Math.random().toString(36).substr(2, 8); // Ex: "P-x5g7f9k"
-jsPsych.data.addProperties({ participant_id: participantID });
-
+        const participantID = "P-" + Math.random().toString(36).substr(2, 8);
+jsPsych.data.addProperties({ 
+  participant_id: participantID,
+  start_time: new Date().toISOString()
+});
+        
         // ===== TELAS DE INTRODUÇÃO =====
         const introScreens = [
             {
@@ -192,33 +195,43 @@ jsPsych.data.addProperties({ participant_id: participantID });
   type: jsPsychHtmlKeyboardResponse,
   stimulus: "<p>Obrigado por participar! Seus dados estão sendo salvos...</p>",
   on_start: function() {
-    const data = {
+    // Organiza os dados para envio
+    const experimentData = {
       metadata: {
         id: participantID,
         date: new Date().toISOString(),
-        duration: jsPsych.getTotalTime() / 1000 // Em segundos
+        duration: (jsPsych.getTotalTime() / 1000).toFixed(2),
+        browser: navigator.userAgent
       },
-      responses: jsPsych.data.get().json()
+      trials: jsPsych.data.get().filter({trial_type: 'audio-keyboard-response'}).json()
     };
 
-    // Envia para o Apps Script E faz download local
+    // Envia para o Google Apps Script
     fetch('https://script.google.com/macros/s/AKfycbw8XZIGYKnKtSraZu-pIcM-FabQoDclfTNXZHUV_-sMShEQ3rOSFENvsY0ixGrJzpzz_w/exec', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(experimentData)
     })
-    .then(response => response.json())
-    .then(data => console.log("Sucesso:", data))
-    .catch(error => console.error("Erro:", error));
-
-    // Backup local (opcional)
-    const csv = jsPsych.data.get().csv();
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `dados_${participantID}.csv`;
-    link.click();
+    .then(response => {
+      if (!response.ok) throw new Error('Erro na rede');
+      return response.json();
+    })
+    .then(data => {
+      console.log("Dados salvos com sucesso:", data);
+      // Backup local opcional
+      const csvData = jsPsych.data.get().csv();
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dados_${participantID}.csv`;
+      a.click();
+    })
+    .catch(error => {
+      console.error("Erro ao enviar:", error);
+      // Fallback: força download se o servidor falhar
+      jsPsych.data.get().localSave('csv', `backup_${participantID}.csv`);
+    });
   }
 };
 
