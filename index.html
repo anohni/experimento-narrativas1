@@ -97,20 +97,21 @@
             }
         ];
 
-        // ===== EXEMPLOS COM FEEDBACK =====
+        // ===== EXEMPLOS COM FEEDBACK (MODIFICADO) =====
         const exampleAudios = [
-            { audio: "audios/exemplo01.wav", correctKey: "n", fullAudio: "audios/exemplo01_completo.wav" }, // N
-            { audio: "audios/exemplo04.wav", correctKey: "s", fullAudio: "audios/exemplo04_completo.wav" }  // S
+            { audio: "audios/exemplo01.wav", correctKey: "n", fullAudio: "audios/exemplo01_completo.wav" },
+            { audio: "audios/exemplo04.wav", correctKey: "s", fullAudio: "audios/exemplo04_completo.wav" }
         ];
 
         let exampleTrials = [];
         exampleAudios.forEach((audioObj) => {
             // Trial de decisão (S/N)
             exampleTrials.push({
-                type: jsPsychAudioKeyboardResponse,
+                type: 'audio-keyboard-response',
                 stimulus: audioObj.audio,
                 choices: ['s', 'n'],
                 prompt: "<p>Pressione <strong>S</strong> para SIM ou <strong>N</strong> para NÃO.</p>",
+                enable_response_while_playing: false,
                 post_trial_gap: 500,
                 on_finish: (data) => {
                     data.correct = data.response === audioObj.correctKey;
@@ -119,7 +120,7 @@
 
             // Feedback
             exampleTrials.push({
-                type: jsPsychHtmlKeyboardResponse,
+                type: 'html-keyboard-response',
                 stimulus: (data) => {
                     const lastTrial = jsPsych.data.get().last(1).values()[0];
                     const correct = lastTrial.correct;
@@ -134,11 +135,25 @@
                 choices: [' ']
             });
 
-            // Tela para ouvir narrativa completa
+            // Tela de ativação do autoplay (NOVO)
+            exampleTrials.push({
+                type: 'html-keyboard-response',
+                stimulus: `
+                    <h3>Preparação para ouvir a narrativa completa</h3>
+                    <p>Por favor, pressione ESPAÇO para ouvir a narrativa completa.</p>
+                    <p>O áudio começará automaticamente.</p>
+                `,
+                choices: [' '],
+                on_finish: function() {
+                    jsPsych.pluginAPI.setAutoplayEnabled(true);
+                }
+            });
+
+            // Tela com áudio completo (AGORA COM AUTOPLAY FUNCIONAL)
             exampleTrials.push({
                 type: 'audio-button-response',
                 stimulus: audioObj.fullAudio,
-                prompt: "<p>Agora você ouvirá a narrativa completa:</p>",
+                prompt: "<p>Ouvindo narrativa completa...</p>",
                 choices: ['Continuar'],
                 autoplay: true,
                 response_allowed_while_playing: false
