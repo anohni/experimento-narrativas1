@@ -107,14 +107,15 @@
         exampleAudios.forEach((audioObj) => {
             // Trial de decisão (S/N)
             exampleTrials.push({
-                type: jsPsychAudioKeyboardResponse,
-                stimulus: audioObj.audio,
-                choices: ['s', 'n'],
-                prompt: "<p>Pressione <strong>S</strong> para SIM ou <strong>N</strong> para NÃO.</p>",
-                post_trial_gap: 500,
-                on_finish: (data) => {
-                    data.correct = data.response === audioObj.correctKey;
-                }
+               type: jsPsychAudioKeyboardResponse,
+    stimulus: audioObj.audio,
+    choices: ['s', 'n'],
+    prompt: "<p>Pressione <strong>S</strong> para SIM ou <strong>N</strong> para NÃO.</p>",
+    trial_ends_after_audio: false,
+    response_allowed_while_playing: false,
+    post_trial_gap: 500,
+    on_finish: (data) => {
+        data.correct = data.response === audioObj.correctKey;
             });
 
             // Feedback
